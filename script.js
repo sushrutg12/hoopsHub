@@ -1,56 +1,60 @@
 let playersData = [];
 let currentPlayer = {}; // Store the current player object
+let playerID = 0
+let Name = ""
+let teamName = ""
 
+async function playerSearch() {
+  console.log("searchPlayer called");
+  const searchQuery = document.getElementById('search-input').value.trim();
+  const [firstName, lastName] = searchQuery.split(' ');
+  Name = firstName + " "+ lastName;
+  console.log(firstName)
+  if (!firstName || !lastName) {
+    alert('Please enter both the first and last name.');
+    return;
+  }
 
-async function getPlayerStats() {
-  const url = 'https://api-nba-v1.p.rapidapi.com/players/statistics?id=514&season=2024';
+  // Fetch players based on search input (search by last name)
+  const url =`https://api-nba-v1.p.rapidapi.com/players?name=${lastName}`;
   const options = {
-      method: 'GET',
-      headers: {
-          'x-rapidapi-key': 'f5947c3ed2mshbe927e427ea9644p1115a4jsnf07b6e8e02c9',
-          'x-rapidapi-host': 'api-nba-v1.p.rapidapi.com'
-      }
+    method: 'GET',
+    headers: {
+      'x-rapidapi-key': 'f5947c3ed2mshbe927e427ea9644p1115a4jsnf07b6e8e02c9',
+      'x-rapidapi-host': 'api-nba-v1.p.rapidapi.com'
+    }
   };
 
   try {
-      const response = await fetch(url, options);
-      const result = await response.json();
-      const playerStats = result.response;
+    const response = await fetch(url, options);
+    const result = await response.json();
+    const players = result.response;
 
-      const last5Games = playerStats.slice(-5); // Fixed this part by removing extra 'response'
+    playersData = players;  // Save the players data globally
 
-      let totalPoints = 0;
-      let totalAssists = 0;
-      let totalRebounds = 0;
+    // Filter players by matching first name and last name
+    const matchedPlayer = players.find(player => player.firstname.toLowerCase() === firstName.toLowerCase() && player.lastname.toLowerCase() === lastName.toLowerCase());
 
-      last5Games.forEach(game => {
-          totalPoints += game.points;
-          totalAssists += game.assists;
-          totalRebounds += game.totReb;
-      });
+    if (!matchedPlayer) {
+      alert("Player not found with that full name.");
+    } else {
+      // Populate the table with the matched player
+      playerID = matchedPlayer.id;
+      console.log(playerID)
+      console.log(matchedPlayer)
+      getPlayerStats(playerID);
+      //populatePlayerStats([matchedPlayer]);
+      
 
-      const avgPoints = totalPoints / last5Games.length;
-      const avgAssists = totalAssists / last5Games.length;
-      const avgRebounds = totalRebounds / last5Games.length;
-
-      console.log('Averages for the last 5 games:');
-      console.log(`Points: ${avgPoints.toFixed(2)}`);
-      console.log(`Assists: ${avgAssists.toFixed(2)}`);
-      console.log(`Rebounds: ${avgRebounds.toFixed(2)}`);
+      
+    }
 
   } catch (error) {
-      console.error(error);
+    console.error('Error searching for players:', error);
   }
 }
 
-// Call the function to get the stats
-getPlayerStats();
 
-
-
-  
-
-// Function to populate player stats in the table
 function populatePlayerStats(players) {
   const playerStatsTable = document.getElementById('player-stats-table').getElementsByTagName('tbody')[0];
   playerStatsTable.innerHTML = '';  // Clear existing rows
@@ -58,130 +62,161 @@ function populatePlayerStats(players) {
   players.forEach(player => {
     const row = playerStatsTable.insertRow();
     row.innerHTML = `
-      <td>${player.name}</td>
-      <td>${player.team}</td>
-      <td>${player.points}</td>
-      <td>${player.assists}</td>
-      <td>${player.rebounds}</td>
+      <td>${player.firstname} ${player.lastname}</td>
+      <td>${player.team.name}</td>
       <td><button onclick="showPlayerDetails('${player.id}')">View Details</button></td>
+      <td id="points-${player.id}">-</td>
+      <td id="assists-${player.id}">-</td>
+      <td id="rebounds-${player.id}">-</td>
     `;
   });
 }
 
-// Function to search for a player by name
-function searchPlayer() {
-  const searchQuery = document.getElementById('search-input').value.toLowerCase();
-  const filteredPlayers = playersData.filter(player => player.name.toLowerCase().includes(searchQuery));
-  populatePlayerStats(filteredPlayers);
-}
-
 // Function to show player details and last 5 game stats
-function showPlayerDetails(playerId) {
+async function showPlayerDetails(playerId) {
   const player = playersData.find(p => p.id === playerId);
   currentPlayer = player;
 
-  // Display player stats in a separate section
-  displayPlayerStats(player);
-  fetchPlayerLast5Games(playerId);
+  // Fetch the last 5 games stats for the selected player
+  await getPlayerStats(playerId);
 }
 
-// Display basic player stats
-function displayPlayerStats(player) {
-  const statsTable = document.getElementById('player-stats-table');
-  statsTable.innerHTML = `
-    <tr>
-      <th>Name</th>
-      <td>${player.name}</td>
-    </tr>
-    <tr>
-      <th>Team</th>
-      <td>${player.team}</td>
-    </tr>
-    <tr>
-      <th>Points</th>
-      <td>${player.points}</td>
-    </tr>
-    <tr>
-      <th>Assists</th>
-      <td>${player.assists}</td>
-    </tr>
-    <tr>
-      <th>Rebounds</th>
-      <td>${player.rebounds}</td>
-    </tr>
-  `;
-}
 
-// Fetch last 5 games data for the selected player
-function fetchPlayerLast5Games(playerId) {
-  // Placeholder: Replace with real API endpoint for player games
-  const gamesUrl = `https://api.example.com/player/${playerId}/last5games`;  // Replace with actual API URL
-  fetch(gamesUrl)
-    .then(response => response.json())
-    .then(games => {
-      const gameStats = games.map(game => ({
-        date: game.date,
-        points: game.points,
-        assists: game.assists,
-        rebounds: game.rebounds,
-      }));
-      generatePlayerGamesChart(gameStats);  // Generate chart based on the last 5 games
-    })
-    .catch(error => console.error('Error fetching game stats:', error));
-}
-
-// Function to generate chart for last 5 games stats
-function generatePlayerGamesChart(gameStats) {
-  const ctx = document.getElementById('gameStatsChart').getContext('2d');
-  const dates = gameStats.map(game => game.date);
-  const points = gameStats.map(game => game.points);
-  const assists = gameStats.map(game => game.assists);
-  const rebounds = gameStats.map(game => game.rebounds);
-
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: dates,
-      datasets: [
-        {
-          label: 'Points',
-          data: points,
-          borderColor: 'rgba(255, 99, 132, 1)',
-          borderWidth: 2,
-          fill: false,
-        },
-        {
-          label: 'Assists',
-          data: assists,
-          borderColor: 'rgba(54, 162, 235, 1)',
-          borderWidth: 2,
-          fill: false,
-        },
-        {
-          label: 'Rebounds',
-          data: rebounds,
-          borderColor: 'rgba(75, 192, 192, 1)',
-          borderWidth: 2,
-          fill: false,
-        },
-      ]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        x: {
-          title: {
-            display: true,
-            text: 'Game Date'
-          }
-        },
-        y: {
-          title: {
-            display: true,
-            text: 'Stats'
-          }
-        }
-      }
+// Fetch player stats for the selected player and calculate averages for the last 5 games
+async function getPlayerStats(playerId) {
+  const url = `https://api-nba-v1.p.rapidapi.com/players/statistics?id=${playerId}&season=2024`;
+  const options = {
+    method: 'GET',
+    headers: {
+      'x-rapidapi-key': 'f5947c3ed2mshbe927e427ea9644p1115a4jsnf07b6e8e02c9',
+      'x-rapidapi-host': 'api-nba-v1.p.rapidapi.com'
     }
-  });
+  };
+
+  try {
+    const response = await fetch(url, options);
+    const result = await response.json();
+    const playerStats = result.response;
+
+    // Calculate averages for the last 5 games
+    const last5Games = playerStats.slice(-5);
+
+    let totalPoints = 0;
+    let totalAssists = 0;
+    let totalRebounds = 0;
+
+    last5Games.forEach(game => {
+      totalPoints += game.points;
+      totalAssists += game.assists;
+      totalRebounds += game.totReb;
+    });
+
+    const avgPoints = totalPoints / last5Games.length;
+    const avgAssists = totalAssists / last5Games.length;
+    const avgRebounds = totalRebounds / last5Games.length;
+
+    console.log('Averages for the last 5 games:');
+    console.log(`Points: ${avgPoints.toFixed(2)}`);
+    console.log(`Assists: ${avgAssists.toFixed(2)}`);
+    console.log(`Rebounds: ${avgRebounds.toFixed(2)}`);
+
+    const lastGame = playerStats[0];
+    console.log(lastGame);
+    teamName= lastGame.team.name;
+    console.log(teamName);
+
+    // Update the table with the averages for the player
+    updateTableWithAverages(Name, avgPoints, avgAssists, avgRebounds, teamName);
+
+  } catch (error) {
+    console.error('Error fetching player stats:', error);
+  }
 }
+
+// Function to update the table with the averages
+function updateTableWithAverages(playerName, avgPoints, avgAssists, avgRebounds, teamName) {
+  console.log("here")
+  const tableBody = document.querySelector("#player-stats-table tbody");
+  tableBody.innerHTML = "";
+  const row = document.createElement("tr");
+
+  // Create and append cells for each player property
+  const playerCell = document.createElement("td");
+  console.log(playerName)
+  playerCell.textContent = playerName;
+  row.appendChild(playerCell);
+
+  const teamCell = document.createElement("td");
+  teamCell.textContent = teamName;
+  row.appendChild(teamCell);
+
+  const pointsCell = document.createElement("td");
+  pointsCell.textContent = avgPoints;
+  row.appendChild(pointsCell);
+  console.log("added points")
+
+  const assistsCell = document.createElement("td");
+  assistsCell.textContent = avgAssists;
+  row.appendChild(assistsCell);
+
+  const reboundsCell = document.createElement("td");
+  reboundsCell.textContent = avgRebounds;
+  row.appendChild(reboundsCell);
+
+  // Append the row to the table body
+  tableBody.appendChild(row);
+
+}
+
+
+
+
+
+
+
+
+
+
+// async function getPlayerStats(playerID) {
+//   const url = 'https://api-nba-v1.p.rapidapi.com/players/statistics?id=${playerId}&season=2024';
+//   const options = {
+//       method: 'GET',
+//       headers: {
+//           'x-rapidapi-key': 'f5947c3ed2mshbe927e427ea9644p1115a4jsnf07b6e8e02c9',
+//           'x-rapidapi-host': 'api-nba-v1.p.rapidapi.com'
+//       }
+//   };
+
+//   try {
+//       const response = await fetch(url, options);
+//       const result = await response.json();
+//       const playerStats = result.response;
+
+//       const last5Games = playerStats.slice(-5); // Fixed this part by removing extra 'response'
+
+//       let totalPoints = 0;
+//       let totalAssists = 0;
+//       let totalRebounds = 0;
+
+//       last5Games.forEach(game => {
+//           totalPoints += game.points;
+//           totalAssists += game.assists;
+//           totalRebounds += game.totReb;
+//       });
+
+//       const avgPoints = totalPoints / last5Games.length;
+//       const avgAssists = totalAssists / last5Games.length;
+//       const avgRebounds = totalRebounds / last5Games.length;
+
+//       console.log('Averages for the last 5 games:');
+//       console.log(`Points: ${avgPoints.toFixed(2)}`);
+//       console.log(`Assists: ${avgAssists.toFixed(2)}`);
+//       console.log(`Rebounds: ${avgRebounds.toFixed(2)}`);
+
+//   } catch (error) {
+//       console.error(error);
+//   }
+// }
+
+// Call the function to get the stats
+//getPlayerStats();

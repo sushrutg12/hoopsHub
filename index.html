@@ -18,8 +18,10 @@
   <main>
     <section id="stats">
       <h2>Player Statistics</h2>
-      <input type="text" id="search-input" placeholder="Search for a player..." oninput="searchPlayer()">
+      <input type="text" id="search-input" placeholder="Search for a player..." >
+      <button onclick="playerSearch()">Search</button>
       <div class="stats-container">
+        <h3>Last 5 Games Stats:</h3>
         <table id="player-stats-table">
           <thead>
             <tr>
