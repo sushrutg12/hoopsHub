@@ -1,89 +1,96 @@
 let playersData = [];
-let currentPlayer = {}; // Store the current player object
-let playerID = 0
-let Name = ""
-let teamName = ""
+let chosenPlayers = []; // List to store chosen players
+let playerID = 0;
+let Name = "";
+let teamName = "";
+let debounceTimer = null; // Timer for debouncing input
+let activeSearchRequest = null; // Track active API request
 
-async function playerSearch() {
-  console.log("searchPlayer called");
-  const searchQuery = document.getElementById('search-input').value.trim();
-  const [firstName, lastName] = searchQuery.split(' ');
-  Name = firstName + " "+ lastName;
-  console.log(firstName)
-  if (!firstName || !lastName) {
-    alert('Please enter both the first and last name.');
-    return;
+// Fetch players dynamically based on search input
+async function fetchPlayersBySearch(query) {
+  if (activeSearchRequest) {
+    activeSearchRequest.abort(); // Cancel the previous request if it's still pending
   }
 
-  // Fetch players based on search input (search by last name)
-  const url =`https://api-nba-v1.p.rapidapi.com/players?name=${lastName}`;
+  const controller = new AbortController();
+  activeSearchRequest = controller; // Set the current request
+  const url = `https://api-nba-v1.p.rapidapi.com/players?search=${query}`;
   const options = {
     method: 'GET',
     headers: {
       'x-rapidapi-key': 'f5947c3ed2mshbe927e427ea9644p1115a4jsnf07b6e8e02c9',
       'x-rapidapi-host': 'api-nba-v1.p.rapidapi.com'
-    }
+    },
+    signal: controller.signal // Attach the abort signal
   };
 
   try {
     const response = await fetch(url, options);
     const result = await response.json();
-    const players = result.response;
-
-    playersData = players;  // Save the players data globally
-
-    // Filter players by matching first name and last name
-    const matchedPlayer = players.find(player => player.firstname.toLowerCase() === firstName.toLowerCase() && player.lastname.toLowerCase() === lastName.toLowerCase());
-
-    if (!matchedPlayer) {
-      alert("Player not found with that full name.");
-    } else {
-      // Populate the table with the matched player
-      playerID = matchedPlayer.id;
-      console.log(playerID)
-      console.log(matchedPlayer)
-      getPlayerStats(playerID);
-      //populatePlayerStats([matchedPlayer]);
-      
-
-      
-    }
-
+    const players = result.response || [];
+    displaySuggestions(players); // Show results as suggestions
   } catch (error) {
-    console.error('Error searching for players:', error);
+    if (error.name !== 'AbortError') {
+      console.error("Error fetching players:", error);
+    }
+  } finally {
+    activeSearchRequest = null; // Clear the active request
   }
 }
 
+// Display suggestions based on fetched players
+function displaySuggestions(players) {
+  const suggestionsBox = document.getElementById('suggestions-box');
+  suggestionsBox.innerHTML = ''; // Clear existing suggestions
 
-function populatePlayerStats(players) {
-  const playerStatsTable = document.getElementById('player-stats-table').getElementsByTagName('tbody')[0];
-  playerStatsTable.innerHTML = '';  // Clear existing rows
+  if (players.length === 0) {
+    const noResults = document.createElement('div');
+    noResults.className = 'suggestion-item';
+    noResults.textContent = 'No players found';
+    suggestionsBox.appendChild(noResults);
+    return;
+  }
 
   players.forEach(player => {
-    const row = playerStatsTable.insertRow();
-    row.innerHTML = `
-      <td>${player.firstname} ${player.lastname}</td>
-      <td>${player.team.name}</td>
-      <td><button onclick="showPlayerDetails('${player.id}')">View Details</button></td>
-      <td id="points-${player.id}">-</td>
-      <td id="assists-${player.id}">-</td>
-      <td id="rebounds-${player.id}">-</td>
-    `;
+    const suggestionItem = document.createElement('div');
+    suggestionItem.className = 'suggestion-item';
+    suggestionItem.textContent = `${player.firstname} ${player.lastname}`;
+    suggestionItem.addEventListener('click', () => {
+      document.getElementById('search-input').value = suggestionItem.textContent;
+      clearSuggestions();
+      getPlayerStats(player.id, `${player.firstname} ${player.lastname}`); // Fetch stats for the selected player
+    });
+    suggestionsBox.appendChild(suggestionItem);
   });
 }
 
-// Function to show player details and last 5 game stats
-async function showPlayerDetails(playerId) {
-  const player = playersData.find(p => p.id === playerId);
-  currentPlayer = player;
-
-  // Fetch the last 5 games stats for the selected player
-  await getPlayerStats(playerId);
+// Clear suggestions box
+function clearSuggestions() {
+  const suggestionsBox = document.getElementById('suggestions-box');
+  suggestionsBox.innerHTML = '';
 }
 
+// Search for players with debouncing
+document.getElementById('search-input').addEventListener('input', function () {
+  const query = this.value.trim();
+  clearTimeout(debounceTimer); // Clear the previous timer
+  if (query.length >= 3) {
+    debounceTimer = setTimeout(() => {
+      fetchPlayersBySearch(query); // Fetch players after debounce delay
+    }, 300); // Adjust the debounce delay as needed (300ms is common)
+  } else {
+    clearSuggestions(); // Clear suggestions for shorter queries
+  }
+});
 
-// Fetch player stats for the selected player and calculate averages for the last 5 games
-async function getPlayerStats(playerId) {
+// Fetch player stats and update the table
+async function getPlayerStats(playerId, playerName) {
+  // Check if the player is already in the chosenPlayers list
+  if (chosenPlayers.includes(playerName)) {
+    alert(`${playerName} is already in the table.`);
+    return;
+  }
+
   const url = `https://api-nba-v1.p.rapidapi.com/players/statistics?id=${playerId}&season=2024`;
   const options = {
     method: 'GET',
@@ -98,7 +105,11 @@ async function getPlayerStats(playerId) {
     const result = await response.json();
     const playerStats = result.response;
 
-    // Calculate averages for the last 5 games
+    if (!playerStats || playerStats.length === 0) {
+      alert('No stats available for this player.');
+      return;
+    }
+
     const last5Games = playerStats.slice(-5);
 
     let totalPoints = 0;
@@ -106,117 +117,48 @@ async function getPlayerStats(playerId) {
     let totalRebounds = 0;
 
     last5Games.forEach(game => {
-      totalPoints += game.points;
-      totalAssists += game.assists;
-      totalRebounds += game.totReb;
+      totalPoints += game.points || 0;
+      totalAssists += game.assists || 0;
+      totalRebounds += game.totReb || 0;
     });
 
     const avgPoints = totalPoints / last5Games.length;
     const avgAssists = totalAssists / last5Games.length;
     const avgRebounds = totalRebounds / last5Games.length;
 
-    console.log('Averages for the last 5 games:');
-    console.log(`Points: ${avgPoints.toFixed(2)}`);
-    console.log(`Assists: ${avgAssists.toFixed(2)}`);
-    console.log(`Rebounds: ${avgRebounds.toFixed(2)}`);
-
     const lastGame = playerStats[0];
-    console.log(lastGame);
-    teamName= lastGame.team.name;
-    console.log(teamName);
+    teamName = lastGame.team.name;
 
-    // Update the table with the averages for the player
-    updateTableWithAverages(Name, avgPoints, avgAssists, avgRebounds, teamName);
+    // Store chosen player
+    storeChosenPlayer(playerName);
 
+    // Update the table with player stats
+    updateTableWithAverages(playerName, avgPoints, avgAssists, avgRebounds, teamName);
   } catch (error) {
     console.error('Error fetching player stats:', error);
   }
 }
 
-// Function to update the table with the averages
+// Update table with player stats
 function updateTableWithAverages(playerName, avgPoints, avgAssists, avgRebounds, teamName) {
-  console.log("here")
   const tableBody = document.querySelector("#player-stats-table tbody");
-  tableBody.innerHTML = "";
+
+  // Append a new row for the player
   const row = document.createElement("tr");
-
-  // Create and append cells for each player property
-  const playerCell = document.createElement("td");
-  console.log(playerName)
-  playerCell.textContent = playerName;
-  row.appendChild(playerCell);
-
-  const teamCell = document.createElement("td");
-  teamCell.textContent = teamName;
-  row.appendChild(teamCell);
-
-  const pointsCell = document.createElement("td");
-  pointsCell.textContent = avgPoints;
-  row.appendChild(pointsCell);
-  console.log("added points")
-
-  const assistsCell = document.createElement("td");
-  assistsCell.textContent = avgAssists;
-  row.appendChild(assistsCell);
-
-  const reboundsCell = document.createElement("td");
-  reboundsCell.textContent = avgRebounds;
-  row.appendChild(reboundsCell);
-
-  // Append the row to the table body
+  row.innerHTML = `
+    <td>${playerName}</td>
+    <td>${teamName}</td>
+    <td>${avgPoints.toFixed(2)}</td>
+    <td>${avgAssists.toFixed(2)}</td>
+    <td>${avgRebounds.toFixed(2)}</td>
+  `;
   tableBody.appendChild(row);
-
 }
 
-
-
-
-
-
-
-
-
-
-// async function getPlayerStats(playerID) {
-//   const url = 'https://api-nba-v1.p.rapidapi.com/players/statistics?id=${playerId}&season=2024';
-//   const options = {
-//       method: 'GET',
-//       headers: {
-//           'x-rapidapi-key': 'f5947c3ed2mshbe927e427ea9644p1115a4jsnf07b6e8e02c9',
-//           'x-rapidapi-host': 'api-nba-v1.p.rapidapi.com'
-//       }
-//   };
-
-//   try {
-//       const response = await fetch(url, options);
-//       const result = await response.json();
-//       const playerStats = result.response;
-
-//       const last5Games = playerStats.slice(-5); // Fixed this part by removing extra 'response'
-
-//       let totalPoints = 0;
-//       let totalAssists = 0;
-//       let totalRebounds = 0;
-
-//       last5Games.forEach(game => {
-//           totalPoints += game.points;
-//           totalAssists += game.assists;
-//           totalRebounds += game.totReb;
-//       });
-
-//       const avgPoints = totalPoints / last5Games.length;
-//       const avgAssists = totalAssists / last5Games.length;
-//       const avgRebounds = totalRebounds / last5Games.length;
-
-//       console.log('Averages for the last 5 games:');
-//       console.log(`Points: ${avgPoints.toFixed(2)}`);
-//       console.log(`Assists: ${avgAssists.toFixed(2)}`);
-//       console.log(`Rebounds: ${avgRebounds.toFixed(2)}`);
-
-//   } catch (error) {
-//       console.error(error);
-//   }
-// }
-
-// Call the function to get the stats
-//getPlayerStats();
+// Store chosen player in the list
+function storeChosenPlayer(playerName) {
+  if (!chosenPlayers.includes(playerName)) {
+    chosenPlayers.push(playerName);
+    console.log("Chosen players:", chosenPlayers); // Log the list for verification
+  }
+}

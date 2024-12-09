@@ -4,54 +4,51 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HoopsHub</title>
+  <link rel="icon" href="images/ball.png" type="image/png">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header>
-    <h1>HoopsHub</h1>
-    <nav>
-      <a href="#stats">Player Stats</a>
-      <a href="#visualizations">Visualizations</a>
-    </nav>
+  <header class="header">
+    <div class="header-content">
+      <!-- Logo -->
+      <img src="images/logo.jpeg" alt="HoopsHub Logo" class="logo">
+      <h1>HoopsHub</h1>
+    </div>
+    <h2>Player Stats</h2>
   </header>
 
   <main>
-    <section id="stats">
-      <h2>Player Statistics</h2>
-      <input type="text" id="search-input" placeholder="Search for a player..." >
-      <button onclick="playerSearch()">Search</button>
-      <div class="stats-container">
-        <h3>Last 5 Games Stats:</h3>
-        <table id="player-stats-table">
-          <thead>
-            <tr>
-              <th>Player</th>
-              <th>Team</th>
-              <th>Points</th>
-              <th>Assists</th>
-              <th>Rebounds</th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Player stats will be populated here -->
-          </tbody>
-        </table>
+    <section class="search-section">
+      <h3>Player Search</h3>
+      <div class="search-container">
+        <input type="text" id="search-input" placeholder="Search for a player..." autocomplete="off">
+        <div id="suggestions-box" class="suggestions-box"></div>
       </div>
     </section>
 
-    <section id="visualizations">
-      <h2>Last 5 Games - Player Stats Visualization</h2>
-      <div class="chart-container">
-        <canvas id="gameStatsChart"></canvas>
-      </div>
+    <section class="stats-section">
+      <h3>Last 5 Games Stats:</h3>
+      <table id="player-stats-table">
+        <thead>
+          <tr>
+            <th>Player</th>
+            <th>Team</th>
+            <th>Points</th>
+            <th>Assists</th>
+            <th>Rebounds</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Player stats will populate here -->
+        </tbody>
+      </table>
     </section>
   </main>
 
   <footer>
-    <p>&copy; 2024 HoopsHub | NBA Stats and Visualizations</p>
+    <p>&copy; 2024 HoopsHub | NBA Stats</p>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
