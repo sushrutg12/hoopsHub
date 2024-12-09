@@ -3,8 +3,9 @@ let currentPlayer = {}; // Store the current player object
 let playerID = 0
 let Name = ""
 let teamName = ""
-
+let playerStatsChart = null;
 async function playerSearch() {
+ 
   console.log("searchPlayer called");
   const searchQuery = document.getElementById('search-input').value.trim();
   const [firstName, lastName] = searchQuery.split(' ');
@@ -43,6 +44,7 @@ async function playerSearch() {
       console.log(playerID)
       console.log(matchedPlayer)
       getPlayerStats(playerID);
+      displayChart(playerID);
       //populatePlayerStats([matchedPlayer]);
       
 
@@ -168,55 +170,90 @@ function updateTableWithAverages(playerName, avgPoints, avgAssists, avgRebounds,
 
 }
 
+async function LastFivePoints(playerId) {
+  const url = `https://api-nba-v1.p.rapidapi.com/players/statistics?id=${playerId}&season=2024`;
+  const options = {
+    method: 'GET',
+    headers: {
+      'x-rapidapi-key': 'f5947c3ed2mshbe927e427ea9644p1115a4jsnf07b6e8e02c9',
+      'x-rapidapi-host': 'api-nba-v1.p.rapidapi.com'
+    }
+  };
+
+  try {
+    const response = await fetch(url, options);
+    const result = await response.json();
+    const playerStats = result.response;
+
+    // Calculate averages for the last 5 games
+    const last5Games = playerStats.slice(-5);
+    let lastFiveArray = last5Games.map(game => game.points);
+    return lastFiveArray;
 
 
+}
+catch (error) {
+  console.error('Error fetching player stats:', error);
+  return [];
+}
+}
 
 
+async function displayChart(playerId) {
+  // Get the last 5 points scored by the player
+  // if (gamePointsChart) {
+  //   gamePointsChart.destroy();
+  // }
+  if (playerStatsChart) {
+    playerStatsChart.destroy();
+  }
+  const lastFivePoints = await LastFivePoints(playerId);
 
+  // Check if we received data
+  if (lastFivePoints.length === 0) {
+    alert('No data available for the player.');
+    return;
+  }
 
-
-
-
-// async function getPlayerStats(playerID) {
-//   const url = 'https://api-nba-v1.p.rapidapi.com/players/statistics?id=${playerId}&season=2024';
-//   const options = {
-//       method: 'GET',
-//       headers: {
-//           'x-rapidapi-key': 'f5947c3ed2mshbe927e427ea9644p1115a4jsnf07b6e8e02c9',
-//           'x-rapidapi-host': 'api-nba-v1.p.rapidapi.com'
-//       }
-//   };
-
-//   try {
-//       const response = await fetch(url, options);
-//       const result = await response.json();
-//       const playerStats = result.response;
-
-//       const last5Games = playerStats.slice(-5); // Fixed this part by removing extra 'response'
-
-//       let totalPoints = 0;
-//       let totalAssists = 0;
-//       let totalRebounds = 0;
-
-//       last5Games.forEach(game => {
-//           totalPoints += game.points;
-//           totalAssists += game.assists;
-//           totalRebounds += game.totReb;
-//       });
-
-//       const avgPoints = totalPoints / last5Games.length;
-//       const avgAssists = totalAssists / last5Games.length;
-//       const avgRebounds = totalRebounds / last5Games.length;
-
-//       console.log('Averages for the last 5 games:');
-//       console.log(`Points: ${avgPoints.toFixed(2)}`);
-//       console.log(`Assists: ${avgAssists.toFixed(2)}`);
-//       console.log(`Rebounds: ${avgRebounds.toFixed(2)}`);
-
-//   } catch (error) {
-//       console.error(error);
-//   }
+  // Create a chart with the last 5 points
+  const ctx = document.getElementById('gamePointsChart').getContext('2d');
+  console.log(lastFivePoints);
+  playerStatsChart = new Chart(ctx, {
+    type: 'line', // Choose a chart type (line, bar, etc.)
+    data: {
+      labels: ['Game 1', 'Game 2', 'Game 3', 'Game 4', 'Game 5'], // Label for the games
+      datasets: [{
+        label: 'Points Scored',
+        data: lastFivePoints, // Data from LastFivePoints function
+        borderColor: 'rgb(75, 192, 192)', // Line color
+        tension: 0.1,
+        fill: false // Do not fill the area under the line
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: 'Games'
+          }
+        },
+        y: {
+          title: {
+            display: true,
+            text: 'Points'
+          },
+          beginAtZero: true
+        }
+      }
+    }
+  });
+}
+// function clearChart() {
+  
+//   // Optionally, hide the canvas if you want
+//   document.getElementById('gamePointsChart').style.display = 'none'; // Hide canvas
 // }
 
-// Call the function to get the stats
-//getPlayerStats();
+
