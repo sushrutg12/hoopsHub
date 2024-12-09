@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About HoopsHub</title>
+  <link rel="icon" href="images/ball.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <img src="images/logo.jpeg" alt="HoopsHub Logo" class="logo">
+      <h1>HoopsHub</h1>
+      <nav class="nav-links">
+        <a href="index.html" class="nav-link">Player Stats</a> |
+        <a href="about.html" class="nav-link">About</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section id="about">
+          <h2>About HoopsHub</h2>
+          <p>HoopsHub is designed to provide basketball enthusiasts with easy access to player statistics and visualizations from the latest NBA games. Our platform is powered by modern web technologies and real-time data.</p>
+          
+          <h3>Website Specifications</h3>
+          <ul>
+            <li>Frontend: Built using HTML5, CSS3, and JavaScript for a responsive and interactive user interface.</li>
+            <li>Data Visualization: Utilizes the <a href="https://www.chartjs.org/" target="_blank">Chart.js</a> library to present engaging and dynamic visual representations of player statistics.</li>
+            <li>Responsive Design: Ensures compatibility across all devices, including desktop, tablet, and mobile.</li>
+          </ul>
+          
+          <h3>API Used</h3>
+          <ul>
+            <li>NBA Data API: Fetches real-time player statistics and game data to provide accurate and up-to-date insights. For more information, visit the <a href="https://rapidapi.com/api-sports/api/api-nba" target="_blank">Rapid NBA API documentation</a>.</li>
+          </ul>
+          
+          <h3>Technical Details</h3>
+          <ul>
+            <li>JavaScript is used to fetch and process data from the API asynchronously, leveraging `fetch()` and JSON parsing techniques.</li>
+            <li>Player search functionality is implemented with an input field and a `playerSearch()` function that filters and displays relevant data dynamically.</li>
+            <li>Data tables and charts are generated dynamically based on API responses.</li>
+            <li>The project structure includes separate files for HTML (`index.html`), CSS (`styles.css`), and JavaScript (`script.js`) to maintain modularity and clean code organization.</li>
+          </ul>
+          
+          <h3>Future Improvements</h3>
+          <ul>
+            <li>Adding advanced filtering options for player statistics by team, position, and season.</li>
+            <li>Improved visualizations, including trend analysis over the season.</li>
+            <li>User authentication and personalized dashboards.</li>
+          </ul>
+        </section>
+  </main>
+
+</body>
+</html>

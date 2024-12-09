@@ -1,10 +1,9 @@
 let playersData = [];
 let chosenPlayers = []; // List to store chosen players
-let playerID = 0;
-let Name = "";
-let teamName = "";
+let playerStatsChart = null; // Chart instance
 let debounceTimer = null; // Timer for debouncing input
 let activeSearchRequest = null; // Track active API request
+let playerDatasetColors = ['rgb(75, 192, 192)', 'rgb(255, 99, 132)', 'rgb(54, 162, 235)', 'rgb(255, 206, 86)']; // Colors for datasets
 
 // Fetch players dynamically based on search input
 async function fetchPlayersBySearch(query) {
@@ -85,8 +84,7 @@ document.getElementById('search-input').addEventListener('input', function () {
 
 // Fetch player stats and update the table
 async function getPlayerStats(playerId, playerName) {
-  // Check if the player is already in the chosenPlayers list
-  if (chosenPlayers.includes(playerName)) {
+  if (chosenPlayers.some(player => player.name === playerName)) {
     alert(`${playerName} is already in the table.`);
     return;
   }
@@ -112,53 +110,116 @@ async function getPlayerStats(playerId, playerName) {
 
     const last5Games = playerStats.slice(-5);
 
-    let totalPoints = 0;
-    let totalAssists = 0;
-    let totalRebounds = 0;
+    const stats = {
+      points: last5Games.map(game => game.points || 0),
+      assists: last5Games.map(game => game.assists || 0),
+      rebounds: last5Games.map(game => game.totReb || 0),
+    };
 
-    last5Games.forEach(game => {
-      totalPoints += game.points || 0;
-      totalAssists += game.assists || 0;
-      totalRebounds += game.totReb || 0;
-    });
+    const teamName = last5Games[0]?.team.name || 'Unknown';
 
-    const avgPoints = totalPoints / last5Games.length;
-    const avgAssists = totalAssists / last5Games.length;
-    const avgRebounds = totalRebounds / last5Games.length;
-
-    const lastGame = playerStats[0];
-    teamName = lastGame.team.name;
-
-    // Store chosen player
-    storeChosenPlayer(playerName);
-
-    // Update the table with player stats
-    updateTableWithAverages(playerName, avgPoints, avgAssists, avgRebounds, teamName);
+    chosenPlayers.push({ id: playerId, name: playerName, team: teamName, stats });
+    updateTable(playerName, teamName, stats);
   } catch (error) {
     console.error('Error fetching player stats:', error);
   }
 }
 
 // Update table with player stats
-function updateTableWithAverages(playerName, avgPoints, avgAssists, avgRebounds, teamName) {
+function updateTable(playerName, teamName, stats) {
   const tableBody = document.querySelector("#player-stats-table tbody");
 
-  // Append a new row for the player
   const row = document.createElement("tr");
+  row.setAttribute('id', `row-${playerName}`); // Add an ID to the row for easier deletion
   row.innerHTML = `
+    <td><input type="checkbox" onchange="toggleVisualization('${playerName}')"></td>
     <td>${playerName}</td>
     <td>${teamName}</td>
-    <td>${avgPoints.toFixed(2)}</td>
-    <td>${avgAssists.toFixed(2)}</td>
-    <td>${avgRebounds.toFixed(2)}</td>
+    <td>${(stats.points.reduce((a, b) => a + b) / stats.points.length).toFixed(2)}</td>
+    <td>${(stats.assists.reduce((a, b) => a + b) / stats.assists.length).toFixed(2)}</td>
+    <td>${(stats.rebounds.reduce((a, b) => a + b) / stats.rebounds.length).toFixed(2)}</td>
+    <td><button onclick="deletePlayer('${playerName}')" class="delete-button">Delete</button></td>
   `;
   tableBody.appendChild(row);
 }
 
-// Store chosen player in the list
-function storeChosenPlayer(playerName) {
-  if (!chosenPlayers.includes(playerName)) {
-    chosenPlayers.push(playerName);
-    console.log("Chosen players:", chosenPlayers); // Log the list for verification
-  }
+// Function to delete a player
+function deletePlayer(playerName) {
+  // Remove the player from the chosenPlayers list
+  chosenPlayers = chosenPlayers.filter(player => player.name !== playerName);
+
+  // Remove the player's row from the table
+  const row = document.getElementById(`row-${playerName}`);
+  if (row) row.remove();
+
+  // Update the chart
+  updateChart();
+}
+
+// Update the chart with selected players
+function updateChart() {
+  const selectedPlayers = chosenPlayers.filter(p =>
+    document.querySelector(`input[onchange="toggleVisualization('${p.name}')"]`).checked
+  );
+
+  const chartData = {
+    labels: ['Game 1', 'Game 2', 'Game 3', 'Game 4', 'Game 5'],
+    datasets: selectedPlayers.map((player, i) => ({
+      label: player.name,
+      data: player.stats.points,
+      borderColor: playerDatasetColors[i % playerDatasetColors.length],
+      tension: 0.3,
+      fill: false,
+    })),
+  };
+
+  if (playerStatsChart) playerStatsChart.destroy();
+
+  const ctx = document.getElementById('gamePointsChart').getContext('2d');
+  playerStatsChart = new Chart(ctx, {
+    type: 'line',
+    data: chartData,
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          labels: {
+            color: '#fff', // Set text color for the legend
+          },
+        },
+        tooltip: {
+          titleColor: '#fff', // Tooltip title text color
+          bodyColor: '#fff', // Tooltip body text color
+        },
+      },
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: 'Games',
+            color: '#fff', // X-axis title color
+          },
+          ticks: {
+            color: '#fff', // X-axis tick color
+          },
+        },
+        y: {
+          title: {
+            display: true,
+            text: 'Points',
+            color: '#fff', // Y-axis title color
+          },
+          ticks: {
+            color: '#fff', // Y-axis tick color
+          },
+          beginAtZero: true,
+        },
+      },
+    },
+  });
+}
+
+// Toggle visualization when a checkbox is clicked
+function toggleVisualization(playerName) {
+  updateChart(); // Simply update the chart to reflect the current selected players
 }

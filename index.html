@@ -10,11 +10,13 @@
 <body>
   <header class="header">
     <div class="header-content">
-      <!-- Logo -->
       <img src="images/logo.jpeg" alt="HoopsHub Logo" class="logo">
       <h1>HoopsHub</h1>
+      <nav class="nav-links">
+        <a href="index.html" class="nav-link">Player Stats</a> |
+        <a href="about.html" class="nav-link">About</a>
+      </nav>
     </div>
-    <h2>Player Stats</h2>
   </header>
 
   <main>
@@ -27,15 +29,17 @@
     </section>
 
     <section class="stats-section">
-      <h3>Last 5 Games Stats:</h3>
+      <h3 id="stats">Last 5 Games Stats</h3>
       <table id="player-stats-table">
         <thead>
           <tr>
+            <th>Select</th>
             <th>Player</th>
             <th>Team</th>
             <th>Points</th>
             <th>Assists</th>
             <th>Rebounds</th>
+            <th>Delete</th>
           </tr>
         </thead>
         <tbody>
@@ -43,12 +47,15 @@
         </tbody>
       </table>
     </section>
+
+    <section id="visualizations">
+      <h3 id="stats2">Last 5 Games - Player Stats Visualization</h3>
+      <div class="chart-container">
+        <canvas id="gamePointsChart" width="800" height="400"></canvas>
+      </div>
+    </section>
   </main>
-
-  <footer>
-    <p>&copy; 2024 HoopsHub | NBA Stats</p>
-  </footer>
-
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

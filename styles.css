@@ -18,26 +18,31 @@ body {
 /* Header Styling */
 .header {
   background-color: #1d428a;
-  padding: 20px;
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
 }
 
+/* Header Content */
 .header-content {
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  gap: 15px;
 }
 
 header h1 {
   font-size: 2.5rem;
   color: #fff;
-  margin-bottom: 10px;
+  margin: 0;
 }
 
 header h2 {
   font-size: 1.5rem;
   color: #d4e6f1;
+  margin-top: 10px;
 }
 
 /* Logo Styling */
@@ -47,22 +52,63 @@ header h2 {
   border-radius: 50%;
 }
 
+/* Navigation Links */
+.nav-links {
+  display: flex;
+  gap: 15px;
+  margin-top: 10px;
+  background-color: rgba(255, 255, 255, 0.1); /* Semi-transparent background */
+  padding: 10px 15px;
+  border: 1px solid #fff; /* Border for navigation */
+  border-radius: 5px;
+}
+
+.nav-link {
+  color: #fff;
+  text-decoration: none;
+  font-size: 1rem;
+  padding: 5px;
+}
+
+.nav-link:hover {
+  text-decoration: underline;
+}
+
 /* Main Content */
 main {
   flex: 1;
-  padding: 20px;
+  padding: 50px;
+  gap: 20px;
+
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-/* Search Section */
-.search-section {
-  margin-bottom: 30px;
+/* Section Titles */
+.search-section h3,
+.stats-section h3,
+#visualizations h3 {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+  color: white;
+  padding: 20px;
+  gap: 20px;
+  border: 1px solid white; /* Adding border around titles */
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.1); /* Match the semi-transparent background */
+  text-align: center; /* Ensure the text aligns correctly */
+  max-width: fit-content; /* Prevent it from stretching unnecessarily */
+  margin: 0 auto; /* Center the element */
 }
 
+/* Search Input */
 .search-container {
   position: relative;
+  gap: 20px;
   max-width: 400px;
   margin: 0 auto;
 }
@@ -70,6 +116,8 @@ main {
 #search-input {
   width: 100%;
   padding: 10px 15px;
+  gap: 20px;
+
   font-size: 1rem;
   border: none;
   border-radius: 25px;
@@ -100,10 +148,21 @@ main {
   background: #f0f0f0;
 }
 
+#stats {
+  display: flex;
+  justify-content: center; /* Center horizontally */
+  align-items: center; /* Center vertically */
+  gap: 50px;
+  padding: 20px;
+  color: #fff;
+}
+
+
 /* Stats Section */
 .stats-section {
   width: 100%;
   max-width: 800px;
+  gap: 20px;
   margin: 20px auto;
 }
 
@@ -115,12 +174,15 @@ table {
   color: #333;
   border-radius: 5px;
   overflow: hidden;
+  gap: 20px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 th, td {
   padding: 15px;
   text-align: center;
+  gap: 20px;
+
 }
 
 th {
@@ -137,15 +199,28 @@ tr:hover {
   background: #f1f1f1;
 }
 
-/* Footer Styling */
-footer {
-  background: #1d428a;
-  color: white;
-  text-align: center;
-  padding: 10px;
-  margin-top: auto;
+.chart-container {
+  width: 100%; /* Ensure it stretches across the screen */
+  max-width: 1000px; /* Set a maximum width */
+  margin: 0 auto; /* Center the chart */
+  background: rgba(255, 255, 255, 0.1); /* Subtle background for better visibility */
+  padding: 20px;
+  border-radius: 10px;
+  gap: 20px;
+
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-footer p {
-  font-size: 0.9rem;
+.delete-button {
+  background-color: #ff4d4d; /* Red button */
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.delete-button:hover {
+  background-color: #ff1a1a; /* Darker red on hover */
 }
